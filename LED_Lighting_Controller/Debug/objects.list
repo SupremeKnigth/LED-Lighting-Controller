@@ -1,5 +1,7 @@
 "./Core/Src/app_button.o"
+"./Core/Src/app_console.o"
 "./Core/Src/app_control.o"
+"./Core/Src/app_uart.o"
 "./Core/Src/main.o"
 "./Core/Src/stm32f3xx_hal_msp.o"
 "./Core/Src/stm32f3xx_it.o"

@@ -23,6 +23,8 @@
 /* USER CODE BEGIN Includes */
 #include "app_button.h"
 #include "app_control.h"
+#include "app_uart.h"
+#include "app_console.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -111,6 +113,11 @@ int main(void)
   {
       Error_Handler();
   }
+  if (AppUart_Init(&huart2) != HAL_OK)
+  {
+      Error_Handler();
+  }
+  AppConsole_Init(g_appMs);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -120,6 +127,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    AppUart_Process();
     uint32_t now = g_appMs;
 
     /* Service once per TIM6 tick; all application work stays in main. */
@@ -134,6 +142,8 @@ int main(void)
             AppControl_HandleButton(event);
         }
     }
+    AppConsole_Process(now);
+    AppUart_Process();
   }
   /* USER CODE END 3 */
 }
@@ -366,6 +376,20 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     {
         AppButton_NotifyEdge();
     }
+}
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    AppUart_RxComplete(huart);
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+    AppUart_TxComplete(huart);
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+    AppUart_Error(huart);
 }
 /* USER CODE END 4 */
 

@@ -1,0 +1,10 @@
+../Core/Src/app_console.c:17:13:Send	1
+../Core/Src/app_console.c:22:13:Error	1
+../Core/Src/app_console.c:27:20:ModeName	3
+../Core/Src/app_console.c:31:13:SendStatus	4
+../Core/Src/app_console.c:51:17:Split	10
+../Core/Src/app_console.c:68:21:Number	7
+../Core/Src/app_console.c:85:13:ControlResponse	3
+../Core/Src/app_console.c:91:13:Execute	27
+../Core/Src/app_console.c:148:6:AppConsole_Init	1
+../Core/Src/app_console.c:156:6:AppConsole_Process	19

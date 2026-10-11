@@ -12,6 +12,8 @@ static AppControl_Mode s_mode;
 static AppControl_Mode s_resumeMode;
 static uint8_t s_manualDuty;
 static uint8_t s_appliedDuty;
+static uint16_t s_frequencyHz;
+static uint32_t s_timerClockHz;
 static uint32_t s_autoPhase;
 static uint32_t s_autoSubMs;
 static uint32_t s_ledSubMs;
@@ -48,6 +50,11 @@ void AppControl_Init(TIM_HandleTypeDef *pwmTimer)
     s_resumeMode = APP_MODE_MANUAL;
     s_manualDuty = 25U;
     s_appliedDuty = 0U;
+    s_frequencyHz = 1000U;
+    s_timerClockHz = HAL_RCC_GetPCLK1Freq();
+    if ((RCC->CFGR & RCC_CFGR_PPRE1) != 0U) s_timerClockHz *= 2U;
+    /* Buffer period changes together with the preloaded compare register. */
+    SET_BIT(s_pwmTimer->Instance->CR1, TIM_CR1_ARPE);
     s_autoPhase = 0U;
     s_autoSubMs = 0U;
     s_ledSubMs = 0U;
@@ -103,15 +110,11 @@ void AppControl_HandleButton(AppButton_Event event)
         ++s_shortPressCount;
         if (s_mode == APP_MODE_MANUAL)
         {
-            s_mode = APP_MODE_AUTO;
-            s_autoPhase = 0U;
-            s_autoSubMs = 0U;
-            Control_ApplyDuty(10U);
+            (void)AppControl_SetMode(APP_MODE_AUTO, s_lastMs);
         }
         else
         {
-            s_mode = APP_MODE_MANUAL;
-            Control_ApplyDuty(s_manualDuty);
+            (void)AppControl_SetMode(APP_MODE_MANUAL, s_lastMs);
         }
         Control_ResetStatusLed();
     }
@@ -120,15 +123,11 @@ void AppControl_HandleButton(AppButton_Event event)
         ++s_longPressCount;
         if (s_mode == APP_MODE_PAUSA)
         {
-            s_mode = s_resumeMode;
-            Control_ApplyDuty((s_mode == APP_MODE_AUTO)
-                            ? Control_AutoDuty() : s_manualDuty);
+            (void)AppControl_Resume(s_lastMs);
         }
         else
         {
-            s_resumeMode = s_mode;
-            s_mode = APP_MODE_PAUSA;
-            Control_ApplyDuty(0U);
+            (void)AppControl_Pause(s_lastMs);
         }
         Control_ResetStatusLed();
     }
@@ -144,7 +143,75 @@ void AppControl_GetStatus(AppControl_Status *out)
     out->mode = s_mode;
     out->appliedDuty = s_appliedDuty;
     out->manualDuty = s_manualDuty;
-    out->frequencyHz = 1000U;
+    out->frequencyHz = s_frequencyHz;
     out->shortPressCount = s_shortPressCount;
     out->longPressCount = s_longPressCount;
+}
+
+AppControl_Result AppControl_SetMode(AppControl_Mode mode, uint32_t nowMs)
+{
+    if (s_mode == APP_MODE_PAUSA) return APP_CONTROL_STATE;
+    if (mode != APP_MODE_MANUAL && mode != APP_MODE_AUTO) return APP_CONTROL_RANGE;
+    AppControl_Process(nowMs);
+    s_mode = mode;
+    s_lastMs = nowMs;
+    if (mode == APP_MODE_AUTO)
+    {
+        s_autoPhase = s_autoSubMs = 0U;
+        Control_ApplyDuty(10U);
+    }
+    else Control_ApplyDuty(s_manualDuty);
+    Control_ResetStatusLed();
+    return APP_CONTROL_OK;
+}
+
+AppControl_Result AppControl_SetDuty(uint32_t duty)
+{
+    if (s_mode != APP_MODE_MANUAL) return APP_CONTROL_STATE;
+    if (duty > 100U) return APP_CONTROL_RANGE;
+    s_manualDuty = (uint8_t)duty;
+    Control_ApplyDuty(s_manualDuty);
+    return APP_CONTROL_OK;
+}
+
+AppControl_Result AppControl_SetFrequency(uint32_t frequency)
+{
+    if (s_mode == APP_MODE_PAUSA) return APP_CONTROL_STATE;
+    if (frequency != 500U && frequency != 1000U && frequency != 2000U)
+        return APP_CONTROL_RANGE;
+    uint32_t counterHz = s_timerClockHz / (s_pwmTimer->Instance->PSC + 1U);
+    uint32_t periodTicks = counterHz / frequency;
+    if (periodTicks == 0U || counterHz % frequency != 0U)
+        return APP_CONTROL_RANGE;
+
+    /* PWM is TIM2 only. TIM6 and the monotonic millisecond counter are untouched. */
+    SET_BIT(s_pwmTimer->Instance->CR1, TIM_CR1_UDIS);
+    __HAL_TIM_SET_AUTORELOAD(s_pwmTimer, periodTicks - 1U);
+    Control_ApplyDuty(s_appliedDuty);
+    CLEAR_BIT(s_pwmTimer->Instance->CR1, TIM_CR1_UDIS);
+    s_pwmTimer->Instance->EGR = TIM_EGR_UG;
+    __HAL_TIM_CLEAR_FLAG(s_pwmTimer, (uint32_t)TIM_FLAG_UPDATE);
+    s_frequencyHz = (uint16_t)frequency;
+    return APP_CONTROL_OK;
+}
+
+AppControl_Result AppControl_Pause(uint32_t nowMs)
+{
+    if (s_mode == APP_MODE_PAUSA) return APP_CONTROL_OK;
+    AppControl_Process(nowMs);
+    s_resumeMode = s_mode;
+    s_mode = APP_MODE_PAUSA;
+    Control_ApplyDuty(0U);
+    Control_ResetStatusLed();
+    return APP_CONTROL_OK;
+}
+
+AppControl_Result AppControl_Resume(uint32_t nowMs)
+{
+    if (s_mode != APP_MODE_PAUSA) return APP_CONTROL_STATE;
+    s_lastMs = nowMs;
+    s_mode = s_resumeMode;
+    Control_ApplyDuty((s_mode == APP_MODE_AUTO) ? Control_AutoDuty() : s_manualDuty);
+    Control_ResetStatusLed();
+    return APP_CONTROL_OK;
 }

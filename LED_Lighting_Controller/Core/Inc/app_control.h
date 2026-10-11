@@ -21,9 +21,16 @@ typedef struct
     uint32_t longPressCount;
 } AppControl_Status;
 
+typedef enum { APP_CONTROL_OK, APP_CONTROL_STATE, APP_CONTROL_RANGE } AppControl_Result;
+
 void AppControl_Init(TIM_HandleTypeDef *pwmTimer);
 void AppControl_Process(uint32_t nowMs);
 void AppControl_HandleButton(AppButton_Event event);
 void AppControl_GetStatus(AppControl_Status *out);
+AppControl_Result AppControl_SetMode(AppControl_Mode mode, uint32_t nowMs);
+AppControl_Result AppControl_SetDuty(uint32_t duty);
+AppControl_Result AppControl_SetFrequency(uint32_t frequency);
+AppControl_Result AppControl_Pause(uint32_t nowMs);
+AppControl_Result AppControl_Resume(uint32_t nowMs);
 
 #endif

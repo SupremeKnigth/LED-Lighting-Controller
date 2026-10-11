@@ -1,0 +1,15 @@
+../Core/Src/app_uart.c:15:17:Lock	1
+../Core/Src/app_uart.c:21:17:NextRx	1
+../Core/Src/app_uart.c:22:17:NextTx	1
+../Core/Src/app_uart.c:23:15:TxFreeLocked	1
+../Core/Src/app_uart.c:28:26:ArmRx	3
+../Core/Src/app_uart.c:36:13:LoseRx	1
+../Core/Src/app_uart.c:45:19:AppUart_Init	1
+../Core/Src/app_uart.c:54:6:AppUart_RxComplete	11
+../Core/Src/app_uart.c:97:6:AppUart_Error	2
+../Core/Src/app_uart.c:105:6:AppUart_TxComplete	3
+../Core/Src/app_uart.c:112:6:AppUart_Process	6
+../Core/Src/app_uart.c:129:20:AppUart_Read	3
+../Core/Src/app_uart.c:148:6:AppUart_Write	3
+../Core/Src/app_uart.c:171:8:AppUart_TxFree	1
+../Core/Src/app_uart.c:179:6:AppUart_GetStats	1
