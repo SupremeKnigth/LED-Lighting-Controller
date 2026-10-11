@@ -1,0 +1,5 @@
+../Core/Src/app_button.c:21:16:Button_IsPressed	2
+../Core/Src/app_button.c:26:16:Button_TakeEdge	1
+../Core/Src/app_button.c:36:6:AppButton_Init	1
+../Core/Src/app_button.c:47:6:AppButton_NotifyEdge	1
+../Core/Src/app_button.c:52:17:AppButton_Process	15

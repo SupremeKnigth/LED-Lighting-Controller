@@ -1,0 +1,7 @@
+../Core/Src/app_control.c:22:13:Control_ApplyDuty	1
+../Core/Src/app_control.c:31:13:Control_ResetStatusLed	1
+../Core/Src/app_control.c:37:16:Control_AutoDuty	2
+../Core/Src/app_control.c:44:6:AppControl_Init	1
+../Core/Src/app_control.c:62:6:AppControl_Process	6
+../Core/Src/app_control.c:94:6:AppControl_HandleButton	7
+../Core/Src/app_control.c:137:6:AppControl_GetStatus	2

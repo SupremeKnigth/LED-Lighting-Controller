@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "app_button.h"
+#include "app_control.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,7 +47,7 @@ TIM_HandleTypeDef htim6;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+static volatile uint32_t g_appMs = 0U;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,7 +98,19 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
+  uint32_t lastServiceMs = 0U;
+  if (HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1) != HAL_OK)
+  {
+      Error_Handler();
+  }
 
+  AppButton_Init(g_appMs);
+  AppControl_Init(&htim2);
+
+  if (HAL_TIM_Base_Start_IT(&htim6) != HAL_OK)
+  {
+      Error_Handler();
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -107,6 +120,20 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    uint32_t now = g_appMs;
+
+    /* Service once per TIM6 tick; all application work stays in main. */
+    if (now != lastServiceMs)
+    {
+        lastServiceMs = now;
+        AppControl_Process(now);
+
+        AppButton_Event event = AppButton_Process(now);
+        if (event != APP_BUTTON_NONE)
+        {
+            AppControl_HandleButton(event);
+        }
+    }
   }
   /* USER CODE END 3 */
 }
@@ -325,7 +352,21 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if (htim->Instance == TIM6)
+    {
+        ++g_appMs;
+    }
+}
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == GPIO_PIN_13)
+    {
+        AppButton_NotifyEdge();
+    }
+}
 /* USER CODE END 4 */
 
 /**
